@@ -282,28 +282,133 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
 .route-preview-btn:hover{background:rgba(123,47,255,.2);box-shadow:0 0 20px rgba(123,47,255,.3)}
 .route-preview-btn:active{transform:scale(.95)}
 
-/* CINEMATIC OVERLAY */
-#cinematic-overlay{position:absolute;inset:0;z-index:250;background:rgba(0,0,0,.75);display:none;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:40px}
+/* CINEMATIC OVERLAY — trasparente, mappa visibile e interattiva sotto */
+#cinematic-overlay{
+  position:absolute;inset:0;z-index:250;
+  /* NO background scuro — la mappa resta visibile e toccabile */
+  pointer-events:none; /* passa i touch alla mappa */
+  display:none;flex-direction:column;align-items:stretch;justify-content:space-between;
+}
 #cinematic-overlay.active{display:flex;animation:fadeIn .5s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.cinematic-hud{background:rgba(1,3,8,.98);border:1px solid var(--border2);border-radius:20px;padding:18px 22px;width:calc(100% - 28px);max-width:380px;position:relative;overflow:hidden;backdrop-filter:blur(30px)}
-.cinematic-hud::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--violet),var(--neon),var(--violet),transparent);animation:lineflow 2s linear infinite;background-size:200% 2px}
-.cin-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--violet2);font-family:'JetBrains Mono',monospace;margin-bottom:10px;opacity:.8}
-.cin-dest{font-size:18px;font-weight:900;letter-spacing:-.03em;margin-bottom:4px}
-.cin-meta{display:flex;gap:16px;margin-bottom:14px}
-.cin-meta-item{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700}
-.cin-meta-item span{color:var(--neon)}
-.cin-meta-item small{font-size:9px;color:var(--text3);display:block;text-transform:uppercase;letter-spacing:.08em;font-weight:400}
-.cin-progress{background:var(--bg3);border-radius:4px;height:4px;margin-bottom:14px;overflow:hidden}
-.cin-progress-bar{height:100%;background:linear-gradient(90deg,var(--neon),var(--violet));border-radius:4px;width:0%;transition:width .1s linear;box-shadow:0 0 12px rgba(0,245,255,.4)}
-.cin-steps-preview{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:14px}
+
+/* Top cinematic bar — titolo e countdown */
+.cin-top-bar{
+  pointer-events:all;
+  margin:10px 12px 0;
+  background:rgba(1,3,8,.82);border:1px solid var(--border3);
+  border-radius:16px;padding:10px 16px;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  display:flex;align-items:center;gap:12px;
+  box-shadow:0 0 30px rgba(0,245,255,.12);
+  position:relative;overflow:hidden;
+}
+.cin-top-bar::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--neon),var(--violet),var(--neon),transparent);
+  animation:lineflow 1.8s linear infinite;background-size:200% 2px;
+}
+.cin-mode-big{font-size:26px;line-height:1;filter:drop-shadow(0 0 8px rgba(0,245,255,.6))}
+.cin-top-info{flex:1;min-width:0}
+.cin-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--violet2);font-family:'JetBrains Mono',monospace;opacity:.8}
+.cin-dest-name{font-size:15px;font-weight:900;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.cin-top-badges{display:flex;gap:6px;margin-top:4px}
+.cin-badge{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.2);border-radius:8px;padding:2px 8px;color:var(--neon)}
+.cin-skip-top{
+  pointer-events:all;
+  background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.25);
+  border-radius:10px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--red);
+  cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap;
+  transition:all .15s;flex-shrink:0;
+}
+.cin-skip-top:hover{background:rgba(255,51,102,.18)}
+
+/* Speed indicator — futuristic HUD element floating on map */
+.cin-speed-hud{
+  pointer-events:none;
+  position:absolute;top:80px;right:14px;
+  background:rgba(1,3,8,.85);border:1px solid rgba(255,190,0,.35);
+  border-radius:14px;padding:10px 14px;text-align:center;
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 20px rgba(255,190,0,.15);
+  display:none;
+}
+.cin-speed-hud.show{display:block}
+.cin-spd-val{font-size:28px;font-weight:900;color:var(--amber);font-family:'JetBrains Mono',monospace;letter-spacing:-.04em;text-shadow:0 0 16px rgba(255,190,0,.5);line-height:1}
+.cin-spd-lbl{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+
+/* Step callout — appears over current turn */
+.cin-step-callout{
+  pointer-events:none;
+  position:absolute;left:14px;top:80px;
+  background:rgba(1,3,8,.9);border:1px solid var(--border3);
+  border-radius:14px;padding:10px 14px;max-width:220px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 24px rgba(0,245,255,.15),0 8px 30px rgba(0,0,0,.5);
+  transform:translateX(-200%);transition:transform .4s cubic-bezier(.16,1,.3,1);
+}
+.cin-step-callout.show{transform:translateX(0)}
+.cin-step-callout::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--neon),var(--violet),transparent);opacity:.7;
+}
+.cin-callout-icon{font-size:22px;line-height:1;margin-bottom:4px;filter:drop-shadow(0 0 6px rgba(0,245,255,.5))}
+.cin-callout-text{font-size:12px;font-weight:700;color:var(--text);line-height:1.4}
+.cin-callout-dist{font-size:10px;color:var(--neon);font-family:'JetBrains Mono',monospace;margin-top:3px}
+
+/* Bottom HUD — progress + steps */
+.cinematic-hud{
+  pointer-events:all;
+  margin:0 12px 12px;
+  background:rgba(1,3,8,.88);border:1px solid var(--border2);
+  border-radius:20px;padding:14px 18px;
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  position:relative;overflow:hidden;
+  box-shadow:0 -4px 40px rgba(0,0,0,.4),0 0 0 1px rgba(0,245,255,.06);
+}
+.cinematic-hud::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--violet),var(--neon),var(--violet),transparent);
+  animation:lineflow 2s linear infinite;background-size:200% 2px;
+}
+.cin-progress{background:var(--bg4);border-radius:4px;height:5px;margin-bottom:12px;overflow:hidden;position:relative}
+.cin-progress-bar{
+  height:100%;border-radius:4px;width:0%;
+  background:linear-gradient(90deg,var(--neon),var(--violet),var(--pink));
+  box-shadow:0 0 14px rgba(0,245,255,.5);
+  transition:width .15s linear;
+}
+.cin-progress-glow{
+  position:absolute;top:0;right:0;width:20px;height:100%;
+  background:rgba(255,255,255,.4);border-radius:4px;
+  filter:blur(3px);
+}
+.cin-steps-preview{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin-bottom:12px}
 .cin-steps-preview::-webkit-scrollbar{display:none}
-.cin-step-chip{flex-shrink:0;background:rgba(0,245,255,.05);border:1px solid rgba(0,245,255,.12);border-radius:10px;padding:6px 10px;font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:5px}
-.cin-step-chip.active{background:rgba(0,245,255,.1);border-color:rgba(0,245,255,.35);color:var(--neon)}
+.cin-step-chip{
+  flex-shrink:0;background:rgba(0,245,255,.04);border:1px solid rgba(0,245,255,.1);
+  border-radius:10px;padding:6px 10px;font-size:10.5px;color:var(--text3);
+  font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:5px;
+  transition:all .3s;
+}
+.cin-step-chip.active{
+  background:rgba(0,245,255,.12);border-color:rgba(0,245,255,.4);color:var(--neon);
+  box-shadow:0 0 14px rgba(0,245,255,.15);transform:scale(1.03);
+}
 .cin-btns{display:flex;gap:8px}
-.cin-btn-skip{flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:12px;padding:12px;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .15s}
-.cin-btn-start{flex:1;background:linear-gradient(135deg,var(--neon),var(--neon2));color:var(--bg);border:none;border-radius:12px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .15s;box-shadow:0 0 20px rgba(0,245,255,.4)}
-.cin-btn-start:hover{box-shadow:0 0 35px rgba(0,245,255,.6)}
+.cin-btn-skip{
+  flex:1;background:var(--bg4);border:1px solid var(--border2);border-radius:12px;
+  padding:11px;font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;transition:all .15s;
+}
+.cin-btn-skip:hover{border-color:var(--border3);color:var(--text)}
+.cin-btn-start{
+  flex:2;background:linear-gradient(135deg,var(--neon),var(--neon2));color:var(--bg);
+  border:none;border-radius:12px;padding:11px;font-size:13px;font-weight:900;
+  cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .15s;
+  box-shadow:0 0 22px rgba(0,245,255,.45);letter-spacing:-.01em;
+}
+.cin-btn-start:hover{box-shadow:0 0 38px rgba(0,245,255,.65);transform:translateY(-1px)}
 
 /* STEPS PANEL */
 #steps-panel{position:absolute;bottom:0;left:0;right:0;z-index:35;background:rgba(1,3,8,.98);border-top:1px solid var(--border2);max-height:55%;overflow-y:auto;display:none;backdrop-filter:blur(24px)}
@@ -759,20 +864,44 @@ body::before{content:'';position:fixed;inset:0;z-index:1;pointer-events:none;
       </div>
     </div>
 
-    <!-- CINEMATIC 4D PREVIEW -->
+    <!-- CINEMATIC 4D PREVIEW — mappa visibile sotto -->
     <div id="cinematic-overlay">
-      <div class="cinematic-hud">
-        <div class="cin-title">// 4D Route Preview</div>
-        <div class="cin-dest" id="cin-dest">Destinazione</div>
-        <div class="cin-meta">
-          <div class="cin-meta-item"><span id="cin-dist">—</span><small>distanza</small></div>
-          <div class="cin-meta-item"><span id="cin-time">—</span><small>durata</small></div>
-          <div class="cin-meta-item"><span id="cin-mode">🚶</span><small>modalità</small></div>
+      <!-- Top bar: title + skip -->
+      <div class="cin-top-bar" id="cin-top-bar">
+        <div class="cin-mode-big" id="cin-mode">🚶</div>
+        <div class="cin-top-info">
+          <div class="cin-label">// 4D Route Preview</div>
+          <div class="cin-dest-name" id="cin-dest">Destinazione</div>
+          <div class="cin-top-badges">
+            <span class="cin-badge" id="cin-dist">—</span>
+            <span class="cin-badge" id="cin-time">—</span>
+          </div>
         </div>
-        <div class="cin-progress"><div class="cin-progress-bar" id="cin-progress-bar"></div></div>
+        <button class="cin-skip-top" onclick="skipCinematic()">✕ Salta</button>
+      </div>
+
+      <!-- Step callout (floating over map near current turn) -->
+      <div class="cin-step-callout" id="cin-step-callout">
+        <div class="cin-callout-icon" id="cin-callout-icon">🚀</div>
+        <div class="cin-callout-text" id="cin-callout-text">Procedi...</div>
+        <div class="cin-callout-dist" id="cin-callout-dist">—</div>
+      </div>
+
+      <!-- Speed HUD -->
+      <div class="cin-speed-hud" id="cin-speed-hud">
+        <div class="cin-spd-val" id="cin-spd-val">0</div>
+        <div class="cin-spd-lbl">km/h</div>
+      </div>
+
+      <!-- Bottom HUD -->
+      <div class="cinematic-hud">
+        <div class="cin-progress">
+          <div class="cin-progress-bar" id="cin-progress-bar"></div>
+          <div class="cin-progress-glow" id="cin-progress-glow"></div>
+        </div>
         <div class="cin-steps-preview" id="cin-steps-preview"></div>
         <div class="cin-btns">
-          <button class="cin-btn-skip" onclick="skipCinematic()">✕ Salta</button>
+          <button class="cin-btn-skip" onclick="skipCinematic()">✕ Salta anteprima</button>
           <button class="cin-btn-start" onclick="skipCinematic()">▶ Inizia Nav</button>
         </div>
       </div>
@@ -1250,84 +1379,167 @@ function stopRoutePulseAnimation(){
 }
 
 /* ═══════════════════════════════════════
-   4D CINEMATIC FLY-THROUGH
+   4D CINEMATIC FLY-THROUGH (v2)
+   - Mappa interattiva sotto (pointer-events:none sull'overlay)
+   - Velocità molto più lenta (20-30 sec)
+   - Camera fluida con easeTo (no jumpTo)
+   - Callout per ogni svolta
+   - Zoom drammatico variabile
 ═══════════════════════════════════════ */
 let cinematicStepIdx=0,cinematicCoords=[];
+let cinematicLastEaseTime=0;
+
 function startCinematicPreview(){
   if(!currentRoute||!mbMap)return;
   if(cinematicActive){skipCinematic();return;}
   cinematicActive=true;
+
+  /* Show overlay */
   const ovl=document.getElementById('cinematic-overlay');
   ovl.classList.add('active');
-  /* fill meta */
+
+  /* Fill top bar */
   const destName=currentRoute._destName||'Destinazione';
-  document.getElementById('cin-dest').textContent=destName.split(',')[0];
+  document.getElementById('cin-dest').textContent=destName.split(',')[0].slice(0,30);
   document.getElementById('cin-dist').textContent=fmtDist(currentRoute.distance);
   document.getElementById('cin-time').textContent=fmtTime(currentRoute.duration);
   const modeIco={'walking':'🚶','cycling':'🚴','driving':'🚗'}[currentTransportMode]||'🧭';
   document.getElementById('cin-mode').textContent=modeIco;
+
   /* Steps chips */
   const preview=document.getElementById('cin-steps-preview');
-  preview.innerHTML=currentSteps.slice(0,8).map((s,i)=>`<div class="cin-step-chip${i===0?' active':''}">${turnIcon(s.maneuver)} ${(s.maneuver?.instruction||'...').slice(0,22)}</div>`).join('');
+  preview.innerHTML=currentSteps.slice(0,10).map((s,i)=>{
+    const icon=turnIcon(s.maneuver);
+    const text=(s.maneuver?.instruction||'...').slice(0,20);
+    return `<div class="cin-step-chip${i===0?' active':''}" id="cin-chip-${i}">${icon} ${text}</div>`;
+  }).join('');
+
   cinematicCoords=currentRoute.geometry.coordinates;
   cinematicStepIdx=0;
-  runCinematicFly();
+
+  /* Phase 1: bird's eye overview */
+  const bounds=new mapboxgl.LngLatBounds();
+  cinematicCoords.forEach(c=>bounds.extend(c));
+  mbMap.fitBounds(bounds,{
+    padding:{top:180,bottom:220,left:60,right:80},
+    pitch:25,bearing:0,duration:2000
+  });
+
+  /* Phase 2: after 2.5s start flying */
+  setTimeout(()=>{
+    if(cinematicActive)runCinematicFly();
+  },2600);
 }
 
 function runCinematicFly(){
-  if(!cinematicActive)return;
-  const total=cinematicCoords.length;
-  const duration=Math.min(12000,Math.max(5000,currentRoute.duration*400));
+  if(!cinematicActive||!currentRoute)return;
+  const coords_arr=cinematicCoords;
+  const total=coords_arr.length;
+  if(total<2)return;
+
+  /* Duration: slow — 20s min, 30s max, proportional to route */
+  const BASE_MS=Math.min(30000,Math.max(18000,currentRoute.duration*1200));
   const startTime=performance.now();
   const bar=document.getElementById('cin-progress-bar');
-  const stepsChips=document.querySelectorAll('.cin-step-chip');
-  let lastStepIdx=0;
+  const glowEl=document.getElementById('cin-progress-glow');
+  let lastStepIdx=-1;
+  let lastEaseAt=-1; /* timestamp of last easeTo to avoid spam */
+  const EASE_INTERVAL=800; /* ms between camera moves */
 
-  /* Start with overhead view, then tilt down */
-  const bounds=new mapboxgl.LngLatBounds();
-  cinematicCoords.forEach(c=>bounds.extend(c));
-  mbMap.fitBounds(bounds,{padding:{top:160,bottom:200,left:60,right:60},pitch:30,duration:1200,bearing:0});
+  const callout=document.getElementById('cin-step-callout');
+  const calloutIcon=document.getElementById('cin-callout-icon');
+  const calloutText=document.getElementById('cin-callout-text');
+  const calloutDist=document.getElementById('cin-callout-dist');
 
-  setTimeout(()=>{
-    function frame(now){
-      if(!cinematicActive)return;
-      const elapsed=now-startTime;
-      const progress=Math.min(elapsed/duration,1);
-      bar.style.width=(progress*100)+'%';
-      /* Fly camera along route */
-      const idx=Math.floor(progress*(total-1));
-      const nextIdx=Math.min(idx+1,total-1);
-      const pt=cinematicCoords[idx];
-      const ptNext=cinematicCoords[nextIdx];
-      /* Calculate bearing toward next point */
-      const bearing=calcBearing(pt[1],pt[0],ptNext[1],ptNext[0]);
-      /* Pitch oscillates for dramatic effect */
-      const pitch=55+Math.sin(progress*Math.PI*3)*10;
-      const zoom=16+Math.sin(progress*Math.PI)*2;
-      mbMap.jumpTo({center:pt,bearing:settings.north?0:bearing,pitch,zoom});
-      /* Highlight current step chip */
-      const stepProgress=Math.floor(progress*currentSteps.length);
-      if(stepProgress!==lastStepIdx&&stepProgress<stepsChips.length){
-        stepsChips[lastStepIdx]&&stepsChips[lastStepIdx].classList.remove('active');
-        stepsChips[stepProgress]&&stepsChips[stepProgress].classList.add('active');
-        lastStepIdx=stepProgress;
-      }
-      if(progress<1)cinematicRAF=requestAnimationFrame(frame);
-      else{setTimeout(()=>{if(cinematicActive)skipCinematic();},800);}
+  /* Map step positions to route progress */
+  const stepProgressMap=currentSteps.map((s,i)=>i/(Math.max(currentSteps.length-1,1)));
+
+  function showCallout(stepIdx){
+    const step=currentSteps[stepIdx];
+    if(!step)return;
+    calloutIcon.textContent=turnIcon(step.maneuver);
+    calloutText.textContent=(step.maneuver?.instruction||'Continua').slice(0,40);
+    calloutDist.textContent=step.distance>0?('📏 '+fmtDist(step.distance)):'';
+    callout.classList.add('show');
+    clearTimeout(callout._timer);
+    callout._timer=setTimeout(()=>callout.classList.remove('show'),3500);
+  }
+
+  function frame(now){
+    if(!cinematicActive)return;
+    const elapsed=now-startTime;
+    const progress=Math.min(elapsed/BASE_MS,1);
+
+    /* Progress bar */
+    const pct=(progress*100).toFixed(1)+'%';
+    bar.style.width=pct;
+    if(glowEl)glowEl.style.right=(100-progress*100)+'%';
+
+    /* Camera position along route */
+    const rawIdx=progress*(total-1);
+    const idx=Math.min(Math.floor(rawIdx),total-2);
+    const frac=rawIdx-idx;
+    const ptA=coords_arr[idx];
+    const ptB=coords_arr[Math.min(idx+1,total-1)];
+    /* Interpolate between points for super smooth movement */
+    const lon=ptA[0]+(ptB[0]-ptA[0])*frac;
+    const lat=ptA[1]+(ptB[1]-ptA[1])*frac;
+    const ptNext=coords_arr[Math.min(idx+3,total-1)];
+    const bearing=settings.north?0:calcBearing(lat,lon,ptNext[1],ptNext[0]);
+
+    /* Cinematic zoom: zooms in on turns, out on straights */
+    const sinWave=Math.sin(progress*Math.PI*4);
+    const zoom=15.5+sinWave*1.2+(Math.sin(progress*Math.PI)*0.8);
+    /* Pitch: dramatic tilt, dips on overview moments */
+    const pitch=52+Math.sin(progress*Math.PI*2.5)*12;
+
+    /* Smooth camera — throttle to avoid GPU overload */
+    if(now-lastEaseAt>EASE_INTERVAL){
+      mbMap.easeTo({center:[lon,lat],bearing,pitch,zoom,duration:EASE_INTERVAL+50,easing:t=>t});
+      lastEaseAt=now;
     }
-    cinematicRAF=requestAnimationFrame(frame);
-  },1400);
+
+    /* Step chip highlight + callout */
+    const stepProgress=Math.floor(progress*currentSteps.length);
+    if(stepProgress!==lastStepIdx&&stepProgress<currentSteps.length){
+      /* Unhighlight old */
+      const old=document.getElementById(`cin-chip-${lastStepIdx}`);
+      if(old)old.classList.remove('active');
+      /* Highlight new + scroll into view */
+      const chip=document.getElementById(`cin-chip-${stepProgress}`);
+      if(chip){chip.classList.add('active');chip.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
+      if(stepProgress>0)showCallout(stepProgress);
+      lastStepIdx=stepProgress;
+    }
+
+    if(progress<1){
+      cinematicRAF=requestAnimationFrame(frame);
+    }else{
+      /* End: zoom out to show full route, then settle */
+      const b=new mapboxgl.LngLatBounds();
+      cinematicCoords.forEach(c=>b.extend(c));
+      mbMap.fitBounds(b,{padding:{top:140,bottom:200,left:50,right:60},pitch:40,duration:1500});
+      setTimeout(()=>{if(cinematicActive)skipCinematic();},2200);
+    }
+  }
+
+  cinematicRAF=requestAnimationFrame(frame);
 }
 
 function skipCinematic(){
   cinematicActive=false;
   document.getElementById('cinematic-overlay').classList.remove('active');
+  /* Hide callout */
+  document.getElementById('cin-step-callout').classList.remove('show');
   if(cinematicRAF){cancelAnimationFrame(cinematicRAF);cinematicRAF=null;}
-  /* Settle into navigation view */
+  /* Settle into nav view smoothly */
   if(coords&&mbMap){
     const firstStep=currentSteps[0];
-    const bearing=firstStep?calcBearing(coords.lat,coords.lon,firstStep.maneuver?.location[1]||coords.lat,firstStep.maneuver?.location[0]||coords.lon):0;
-    mbMap.flyTo({center:[coords.lon,coords.lat],zoom:17,pitch:60,bearing:settings.north?0:bearing,duration:1200});
+    const bearing=firstStep?calcBearing(coords.lat,coords.lon,
+      firstStep.maneuver?.location[1]||coords.lat,
+      firstStep.maneuver?.location[0]||coords.lon):0;
+    mbMap.flyTo({center:[coords.lon,coords.lat],zoom:17,pitch:60,
+      bearing:settings.north?0:bearing,duration:1400});
   }
 }
 
